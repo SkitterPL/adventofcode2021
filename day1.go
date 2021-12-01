@@ -1,23 +1,21 @@
-package day1
+package main
 
-import (
-	"adventofcode/utils"
-)
+//https://adventofcode.com/2021/day/1
 
-func Day1() (int, int) {
-	return Task1(), Task2()
+func day1() (int, int) {
+	return day1Task1(), day1Task2()
 }
 
-func Task1() int {
-	data := utils.FileToIntArray("input/1/input.txt")
+func day1Task1() int {
+	data := fileToIntArray("input/1/input.txt")
 	return calculateIncreasedNumber(data)
 }
 
-func Task2() int {
+func day1Task2() int {
 	var transformedData []int
 	var numberOfElementsGrouped = 3
 
-	data := utils.FileToIntArray("input/1/input.txt")
+	data := fileToIntArray("input/1/input.txt")
 	for key := range data {
 		groupedSlice := data[key : key+numberOfElementsGrouped]
 		sumOfElements := groupedSlice[0] + groupedSlice[1] + groupedSlice[2]

@@ -1,4 +1,4 @@
-package utils
+package main
 
 import (
 	"bufio"
@@ -6,15 +6,15 @@ import (
 	"strconv"
 )
 
-func Check(e error) {
+func check(e error) {
 	if e != nil {
 		panic(e)
 	}
 }
 
-func FileToArray(path string) []string {
+func fileToStringArray(path string) []string {
 	file, err := os.Open(path)
-	Check(err)
+	check(err)
 
 	defer file.Close()
 
@@ -26,9 +26,9 @@ func FileToArray(path string) []string {
 	return lines
 }
 
-func FileToIntArray(path string) []int {
+func fileToIntArray(path string) []int {
 	file, err := os.Open(path)
-	Check(err)
+	check(err)
 
 	defer file.Close()
 

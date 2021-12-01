@@ -1,10 +1,8 @@
 package main
 
-import (
-	day1 "adventofcode/day_1"
-	"fmt"
-)
+import "fmt"
 
 func main() {
-	fmt.Println(day1.Day1())
+	//fmt.Println(day1())
+	fmt.Println(day2())
 }
