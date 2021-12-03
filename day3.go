@@ -25,13 +25,14 @@ func day3Task1() int {
 
 func day3Task2() int {
 	data := fileToStringArray("input/3/input.txt")
-	oxygenGeneratorRating := calculateLifeSupportRating(data, Oxygen)
-	CO2Rating := calculateLifeSupportRating(data, CO2)
+	channel := make(chan int, 2)
+	go calculateLifeSupportRating(data, Oxygen, channel)
+	go calculateLifeSupportRating(data, CO2, channel)
 
-	return int(CO2Rating) * int(oxygenGeneratorRating)
+	return <-channel * <-channel
 }
 
-func calculateLifeSupportRating(rowData []string, rating LifeSupportRating) int {
+func calculateLifeSupportRating(rowData []string, rating LifeSupportRating, channel chan int) {
 	iterations := len(rowData[0])
 	for i := 0; i < iterations; i++ {
 		columnData := linesToColumnsArray(rowData)
@@ -39,7 +40,8 @@ func calculateLifeSupportRating(rowData []string, rating LifeSupportRating) int 
 		if len(rowData) == 1 {
 			result, err := strconv.ParseInt(rowData[0], 2, 64)
 			check(err)
-			return int(result)
+			channel <- int(result)
+			return
 		}
 	}
 	panic("Something went wrong")
