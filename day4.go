@@ -65,19 +65,16 @@ func playBingo(data []string) chan BingoBoard {
 	bingoBoards := transformToBingoBoards(data[2:])
 	channel := make(chan BingoBoard, len(bingoBoards))
 	wg := sync.WaitGroup{}
-	mu := sync.Mutex{}
 	wg.Add(len(bingoBoards))
 	for _, board := range bingoBoards {
-		go simulateGameAsync(board, drawedNumbers, &wg, &mu, channel)
+		go simulateGameAsync(board, drawedNumbers, &wg, channel)
 	}
 	wg.Wait()
 	return channel
 }
 
-func simulateGameAsync(board BingoBoard, drawedNumbers []int, wg *sync.WaitGroup, mu *sync.Mutex, channel chan BingoBoard) {
+func simulateGameAsync(board BingoBoard, drawedNumbers []int, wg *sync.WaitGroup, channel chan BingoBoard) {
 	board.simulateGame(drawedNumbers)
-	mu.Lock()
-	defer mu.Unlock()
 	channel <- board
 	wg.Done()
 }
