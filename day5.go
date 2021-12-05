@@ -8,8 +8,13 @@ import (
 //https://adventofcode.com/2021/day/5
 
 type Point struct {
-	x int
-	y int
+	x   int
+	y   int
+	key int
+}
+
+func newPoint(x int, y int) Point {
+	return Point{x, y, ((x+y)*(x+y+1))/2 + y}
 }
 
 func day5() (int, int) {
@@ -26,7 +31,7 @@ func day5Task2() int {
 
 func calculatOverlappedFiels(withDiagonals bool) int {
 	data := fileToStringArray("input/5/input.txt")
-	coordsMap := make(map[int]map[int]int)
+	coordsMap := make(map[int]int)
 	overlappedFieldsCounter := 0
 	for _, row := range data {
 		coords := strings.Split(row, " -> ")
@@ -41,8 +46,8 @@ func calculatOverlappedFiels(withDiagonals bool) int {
 			}
 		}
 
-		startPoint := Point{startCoords[0], startCoords[1]}
-		endPoint := Point{endCoords[0], endCoords[1]}
+		startPoint := newPoint(startCoords[0], startCoords[1])
+		endPoint := newPoint(endCoords[0], endCoords[1])
 
 		overlappedFieldsCounter += fillCoordMap(coordsMap, &startPoint, &endPoint)
 	}
@@ -50,27 +55,21 @@ func calculatOverlappedFiels(withDiagonals bool) int {
 	return overlappedFieldsCounter
 }
 
-func fillCoordMap(coordsMap map[int]map[int]int, startPoint *Point, endPoint *Point) int {
+func fillCoordMap(coordsMap map[int]int, startPoint *Point, endPoint *Point) int {
 	points := calculatePointsBetween(startPoint, endPoint)
 	overlappedFieldsCounter := 0
 	for _, point := range points {
-		if coordsMap[point.x] == nil {
-			coordsMap[point.x] = make(map[int]int)
-			coordsMap[point.x][point.y] = 1
-		} else {
-			coordsMap[point.x][point.y]++
-			if coordsMap[point.x][point.y] == 2 {
-				overlappedFieldsCounter++
-			}
-
+		coordsMap[point.key]++
+		if coordsMap[point.key] == 2 {
+			overlappedFieldsCounter++
 		}
 	}
 	return overlappedFieldsCounter
 }
 
-func calculatePointsBetween(firstPoint *Point, secondPoint *Point) []*Point {
+func calculatePointsBetween(firstPoint *Point, secondPoint *Point) []Point {
 	startingPoint, endingPoint := firstPoint, secondPoint
-	var points []*Point
+	var points []Point
 	if firstPoint.x > secondPoint.x {
 		startingPoint = secondPoint
 		endingPoint = firstPoint
@@ -84,7 +83,7 @@ func calculatePointsBetween(firstPoint *Point, secondPoint *Point) []*Point {
 		}
 		for i := startingPoint.x; i <= endingPoint.x; i++ {
 			for j := startingPoint.y; j <= endingPoint.y; j++ {
-				points = append(points, &Point{i, j})
+				points = append(points, newPoint(i, j))
 			}
 		}
 		return points
@@ -92,12 +91,14 @@ func calculatePointsBetween(firstPoint *Point, secondPoint *Point) []*Point {
 
 	//Diagonals
 	distance := float64(startingPoint.y - endingPoint.y)
+	var point Point
 	for i := 0; i <= int(math.Abs(distance)); i++ {
 		if distance < 0 {
-			points = append(points, &Point{startingPoint.x + i, startingPoint.y + i})
+			point = newPoint(startingPoint.x+i, startingPoint.y+i)
 		} else {
-			points = append(points, &Point{startingPoint.x + i, startingPoint.y - i})
+			point = newPoint(startingPoint.x+i, startingPoint.y-i)
 		}
+		points = append(points, point)
 	}
 
 	return points
