@@ -5,63 +5,33 @@ import (
 	"strings"
 )
 
-const (
-	OLD_REPRODUCE_CYCLE   int = 6
-	FIRST_REPRODUCE_CYCLE int = 8
-)
-
-const DAYS_NUMBER = 80
-
-type Lanternfish struct {
-	daysToReproduce int
-	old             bool
-}
-
-func (fish *Lanternfish) liveOneDay() {
-	fish.daysToReproduce--
-	if fish.daysToReproduce == -1 {
-		fish.daysToReproduce = OLD_REPRODUCE_CYCLE
-		fish.old = true
-	}
-}
-
-func (fish *Lanternfish) canReproduce() bool {
-	return fish.old && fish.daysToReproduce == OLD_REPRODUCE_CYCLE
-}
+const TASK_1_DAYS_NUMBER = 80
+const TASK_2_DAYS_NUMBER = 256
 
 //https://adventofcode.com/2021/day/6
 
 func day6() (int, int) {
-	return day6Task1(), day6Task2()
-}
-
-func day6Task1() int {
 	data := strings.Split(fileToStringArray("input/6/input.txt")[0], ",")
-	lanternfishes := make([]*Lanternfish, 0)
-	var days int
+	return calculateFishNumber(TASK_1_DAYS_NUMBER, data), calculateFishNumber(TASK_2_DAYS_NUMBER, data)
+}
+
+func calculateFishNumber(daysNumber int, data []string) int {
+	days := make([]int, 9)
 	for _, daysToReproduce := range data {
-		days, _ = strconv.Atoi(daysToReproduce)
-		lanternfishes = append(lanternfishes, &Lanternfish{days, true})
+		day, _ := strconv.Atoi(daysToReproduce)
+		days[day]++
 	}
 
-	for i := 0; i < DAYS_NUMBER; i++ {
-		lanternfishes = liveOneDay(lanternfishes)
-	}
-
-	return len(lanternfishes)
-}
-
-func day6Task2() int {
-	return 0
-}
-
-func liveOneDay(lanternfishes []*Lanternfish) []*Lanternfish {
-	lanternfishNumber := len(lanternfishes)
-	for i := 0; i < lanternfishNumber; i++ {
-		lanternfishes[i].liveOneDay()
-		if lanternfishes[i].canReproduce() {
-			lanternfishes = append(lanternfishes, &Lanternfish{FIRST_REPRODUCE_CYCLE, false})
+	temp := 0
+	for i := 0; i < daysNumber; i++ {
+		for j := 0; j < 8; j++ {
+			days[j] = days[j+1]
 		}
+
+		days[8] = temp
+		days[6] += temp
+		temp = days[0]
 	}
-	return lanternfishes
+
+	return sum(days...)
 }
