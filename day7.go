@@ -16,10 +16,10 @@ func day7() (int, int) {
 
 func calculateFuelUsage(data []float64, sumAsSequenceSum bool) int {
 	wg := sync.WaitGroup{}
-	maxValue := int(findMaxValue(data...))
-	channel := make(chan float64, maxValue)
-	wg.Add(maxValue)
-	for i := 0; i < maxValue; i++ {
+	crabLen := len(data)
+	channel := make(chan float64, crabLen)
+	wg.Add(crabLen)
+	for i := 0; i < crabLen; i++ {
 		if sumAsSequenceSum {
 			go calculateAdvancedCrabsFuelUsage(float64(i), data, &wg, channel)
 		} else {
@@ -29,7 +29,7 @@ func calculateFuelUsage(data []float64, sumAsSequenceSum bool) int {
 	wg.Wait()
 	smallestFuelUsage := 1000000000.0
 	var value float64
-	for i := 0; i < int(maxValue); i++ {
+	for i := 0; i < crabLen; i++ {
 		value = <-channel
 		if value < smallestFuelUsage {
 			smallestFuelUsage = value

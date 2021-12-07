@@ -24,6 +24,16 @@ func stringToIntArray(stringNumbers []string) []int {
 	return numbers
 }
 
+func stringToFloatArray(stringNumbers []string) []float64 {
+	var numbers []float64
+	for _, stringNumber := range stringNumbers {
+		number, err := strconv.ParseFloat(stringNumber, 32)
+		check(err)
+		numbers = append(numbers, number)
+	}
+	return numbers
+}
+
 func sum(numbers ...int) int {
 	result := 0
 	for _, number := range numbers {
