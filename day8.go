@@ -55,6 +55,7 @@ func decodeNumbersAsync(line string, wg *sync.WaitGroup, channel chan int) {
 		for key, phrase := range decodedNumbers {
 			if len(getStringDiff(phrase, encodedNumber)) == 0 {
 				sum += strconv.Itoa(key)
+				break
 			}
 		}
 	}
@@ -62,17 +63,17 @@ func decodeNumbersAsync(line string, wg *sync.WaitGroup, channel chan int) {
 	channel <- lineResult
 }
 
-func decodeNumbers(numbers []string) map[int]string {
-	decodedNumbers := map[int]string{}
+func decodeNumbers(numbers []string) [10]string {
+	decodedNumbers := [10]string{}
 
-	getObviousNumbers(decodedNumbers, numbers)
-	get6And0And9(decodedNumbers, numbers)
-	get5And2And3(decodedNumbers, numbers)
+	getObviousNumbers(&decodedNumbers, numbers)
+	get6And0And9(&decodedNumbers, numbers)
+	get5And2And3(&decodedNumbers, numbers)
 
 	return decodedNumbers
 }
 
-func getObviousNumbers(decodedNumbers map[int]string, data []string) {
+func getObviousNumbers(decodedNumbers *[10]string, data []string) {
 	for _, codedNumber := range data {
 		len := len(codedNumber)
 		//1
@@ -98,11 +99,10 @@ func getObviousNumbers(decodedNumbers map[int]string, data []string) {
 	}
 }
 
-func get6And0And9(decodedNumbers map[int]string, data []string) {
+func get6And0And9(decodedNumbers *[10]string, data []string) {
 	fourAndOneDiff := getStringDiff(decodedNumbers[1], decodedNumbers[4])
 	for _, codedNumber := range data {
-		codedNumberLength := len(codedNumber)
-		if codedNumberLength != 6 {
+		if len(codedNumber) != 6 {
 			continue
 		}
 		//0
@@ -121,7 +121,7 @@ func get6And0And9(decodedNumbers map[int]string, data []string) {
 	}
 }
 
-func get5And2And3(decodedNumbers map[int]string, data []string) {
+func get5And2And3(decodedNumbers *[10]string, data []string) {
 	eightAndSixDiff := getStringDiff(decodedNumbers[8], decodedNumbers[6])
 	for _, codedNumber := range data {
 		codedNumberLength := len(codedNumber)
@@ -136,8 +136,7 @@ func get5And2And3(decodedNumbers map[int]string, data []string) {
 	}
 	fiveAndEightDiff := getStringDiff(decodedNumbers[5], decodedNumbers[8])
 	for _, codedNumber := range data {
-		codedNumberLength := len(codedNumber)
-		if codedNumberLength != 5 {
+		if len(codedNumber) != 5 {
 			continue
 		}
 		diff := len(getStringDiff(codedNumber, fiveAndEightDiff))
@@ -159,9 +158,10 @@ func getStringDiff(a string, b string) string {
 		longer = a
 		shorter = b
 	}
+	length := len(longer)
 
 	diff := ""
-	for i := 0; i < len(longer); i++ {
+	for i := 0; i < length; i++ {
 		hasLetter := false
 		for j := 0; j < len(shorter); j++ {
 			if longer[i] == shorter[j] {
