@@ -3,6 +3,7 @@ package main
 import (
 	"strconv"
 	"strings"
+	"sync"
 )
 
 //https://adventofcode.com/2021/day/8
@@ -30,25 +31,38 @@ func day8Task1(data []string) int {
 
 func day8Task2(data []string) int {
 	result := 0
+	recordsToSum := len(data)
+	channel := make(chan int, len(data))
+	wg := sync.WaitGroup{}
+	wg.Add(recordsToSum)
 	for _, line := range data {
-		decodedNumbers := decodeNumbers(line)
-		encodedSumToCalcualte := strings.Fields(strings.Split(line, "|")[1])
-		sum := ""
-		for _, encodedNumber := range encodedSumToCalcualte {
-			for key, phrase := range decodedNumbers {
-				if len(getStringDiff(phrase, encodedNumber)) == 0 {
-					sum += strconv.Itoa(key)
-				}
-			}
-		}
-		lineResult, _ := strconv.Atoi(sum)
-		result += lineResult
+		go decodeNumbersAsync(line, &wg, channel)
+	}
+	wg.Wait()
+	for i := 0; i < recordsToSum; i++ {
+		result += <-channel
 	}
 	return result
 }
 
-func decodeNumbers(line string) map[int]string {
-	numbers := strings.Fields(strings.Split(line, "|")[0])
+func decodeNumbersAsync(line string, wg *sync.WaitGroup, channel chan int) {
+	defer wg.Done()
+	encodedNumbers := strings.Split(line, "|")
+	decodedNumbers := decodeNumbers(strings.Fields(encodedNumbers[0]))
+	encodedSumToCalcualte := strings.Fields(encodedNumbers[1])
+	sum := ""
+	for _, encodedNumber := range encodedSumToCalcualte {
+		for key, phrase := range decodedNumbers {
+			if len(getStringDiff(phrase, encodedNumber)) == 0 {
+				sum += strconv.Itoa(key)
+			}
+		}
+	}
+	lineResult, _ := strconv.Atoi(sum)
+	channel <- lineResult
+}
+
+func decodeNumbers(numbers []string) map[int]string {
 	decodedNumbers := map[int]string{}
 
 	getObviousNumbers(decodedNumbers, numbers)
@@ -64,18 +78,22 @@ func getObviousNumbers(decodedNumbers map[int]string, data []string) {
 		//1
 		if len == 2 {
 			decodedNumbers[1] = codedNumber
+			continue
 		}
 		//4
 		if len == 4 {
 			decodedNumbers[4] = codedNumber
+			continue
 		}
 		//7
 		if len == 3 {
 			decodedNumbers[7] = codedNumber
+			continue
 		}
 		//8
 		if len == 7 {
 			decodedNumbers[8] = codedNumber
+			continue
 		}
 	}
 }
@@ -113,6 +131,7 @@ func get5And2And3(decodedNumbers map[int]string, data []string) {
 		//5
 		if len(getStringDiff(codedNumber, eightAndSixDiff)) == 5 {
 			decodedNumbers[5] = codedNumber
+			break
 		}
 	}
 	fiveAndEightDiff := getStringDiff(decodedNumbers[5], decodedNumbers[8])
