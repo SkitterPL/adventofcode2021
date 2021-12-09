@@ -10,8 +10,8 @@ import (
 type HeightMap struct {
 	width            int
 	height           int
-	numbers          map[int][]int
-	visitedForBasins map[int]map[int]bool
+	numbers          [][]int
+	visitedForBasins [][]bool
 	lowestPoints     []*LowestPoint
 }
 
@@ -108,11 +108,11 @@ func day9() (int, int) {
 func prepareData(data []string) *HeightMap {
 	linesNumber := len(data)
 	numbersInOneline := len(data[0])
-	numbers := make(map[int][]int, linesNumber)
-	visited := make(map[int]map[int]bool, linesNumber)
+	numbers := make([][]int, linesNumber)
+	visited := make([][]bool, linesNumber)
 	for i := 0; i < linesNumber; i++ {
 		numbers[i] = make([]int, numbersInOneline)
-		visited[i] = make(map[int]bool, numbersInOneline)
+		visited[i] = make([]bool, numbersInOneline)
 		for key, character := range data[i] {
 			numbers[i][key], _ = strconv.Atoi(string(character))
 			visited[i][key] = false
