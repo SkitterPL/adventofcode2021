@@ -1,81 +1,123 @@
 package main
 
 import (
+	"sort"
 	"strconv"
-	"strings"
-	"sync"
 )
 
 //https://adventofcode.com/2021/day/9
 
-func day9() (int, int) {
-	data := fileToStringArray("input/9/input.txt")
-	return day9Task1(data), day9Task2(data)
+type HeightMap struct {
+	width            int
+	height           int
+	numbers          map[int][]int
+	visitedForBasins map[int]map[int]bool
+	lowestPoints     []*LowestPoint
 }
 
-func day9Task1(data []string) int {
-	linesNumber := len(data)
-	result := 0
-	ch := make(chan int, linesNumber)
-	wg := sync.WaitGroup{}
-	wg.Add(linesNumber)
-	go calculateLowestPointsRisk(data[0], data[1], "", ch, &wg)
-	for i := 1; i < linesNumber-1; i++ {
-		go calculateLowestPointsRisk(data[i], data[i+1], data[i-1], ch, &wg)
-	}
-	go calculateLowestPointsRisk(data[linesNumber-1], "", data[linesNumber-2], ch, &wg)
-	wg.Wait()
-	for i := 0; i < linesNumber; i++ {
-		result += <-ch
-	}
-	return result
+type LowestPoint struct {
+	x      int
+	y      int
+	height int
 }
 
-func calculateLowestPointsRisk(
-	currentLine string,
-	nextLine string,
-	previousLine string,
-	result chan int,
-	waitGroup *sync.WaitGroup) {
-
-	defer waitGroup.Done()
-	higherByte := ":"[0]
-	lineLen := len(currentLine)
-	sum := 0
-	if previousLine == "" {
-		previousLine = strings.Repeat(":", lineLen)
-	} else if nextLine == "" {
-		nextLine = strings.Repeat(":", lineLen)
+func (board *HeightMap) isLowestPoint(x int, y int) bool {
+	current := board.numbers[y][x]
+	if current < board.returnValueToCompare(x-1, y) &&
+		current < board.returnValueToCompare(x+1, y) &&
+		current < board.returnValueToCompare(x, y-1) &&
+		current < board.returnValueToCompare(x, y+1) {
+		return true
 	}
-	for key := range currentLine {
-		if key == 0 {
-			sum += isLowest(currentLine[key], higherByte, currentLine[key+1], previousLine[key], nextLine[key])
-		} else if key == lineLen-1 {
-			sum += isLowest(currentLine[key], currentLine[key-1], higherByte, previousLine[key], nextLine[key])
-		} else {
-			sum += isLowest(currentLine[key], currentLine[key-1], currentLine[key+1], previousLine[key], nextLine[key])
+	return false
+}
+
+func (board *HeightMap) returnValueToCompare(x int, y int) int {
+	if y < 0 || y > board.height-1 {
+		return 10
+	}
+	if x < 0 || x > board.width-1 {
+		return 10
+	}
+	return board.numbers[y][x]
+}
+
+func (board *HeightMap) addLowestPoint(x int, y int, value int) {
+	board.lowestPoints = append(board.lowestPoints, &LowestPoint{x, y, value})
+}
+
+func (board *HeightMap) calculateLowestPoints() {
+	for rowKey := range board.numbers {
+		for colKey, value := range board.numbers[rowKey] {
+			if board.isLowestPoint(colKey, rowKey) {
+				board.addLowestPoint(colKey, rowKey, value)
+			}
 		}
 	}
-	result <- sum
 }
 
-func isLowest(
-	current byte,
-	left byte,
-	right byte,
-	up byte,
-	down byte) int {
-	if current < left &&
-		current < right &&
-		current < up &&
-		current < down {
-		value, _ := strconv.Atoi(string(current))
-		return 1 + value
+func (board *HeightMap) calculateRisk() int {
+	risk := 0
+	for _, point := range board.lowestPoints {
+		risk += point.height + 1
 	}
-	return 0
+	return risk
 }
 
-func day9Task2(data []string) int {
-	result := 0
-	return result
+func (board *HeightMap) calculateLargestBasinsSizeMultiplier() int {
+	basinSizes := []int{}
+	for _, lowestPoint := range board.lowestPoints {
+		size := board.calculateBasinSize(lowestPoint)
+		basinSizes = append(basinSizes, size)
+	}
+	sort.Sort(sort.Reverse(sort.IntSlice(basinSizes)))
+	return basinSizes[0] * basinSizes[1] * basinSizes[2]
+}
+
+func (board *HeightMap) calculateBasinSize(point *LowestPoint) int {
+	return board.walkUntilBasinBorder(0, point.y, point.x)
+}
+
+func (board *HeightMap) walkUntilBasinBorder(basinSize int, y int, x int) int {
+	if y < 0 || y > board.height-1 {
+		return basinSize
+	}
+	if x < 0 || x > board.width-1 {
+		return basinSize
+	}
+	if board.visitedForBasins[y][x] {
+		return basinSize
+	}
+	if board.numbers[y][x] == 9 {
+		return basinSize
+	}
+	board.visitedForBasins[y][x] = true
+	basinSize++
+	return basinSize + board.walkUntilBasinBorder(0, y-1, x) +
+		board.walkUntilBasinBorder(0, y+1, x) +
+		board.walkUntilBasinBorder(0, y, x+1) +
+		board.walkUntilBasinBorder(0, y, x-1)
+}
+
+func day9() (int, int) {
+	board := prepareData(fileToStringArray("input/9/input.txt"))
+	board.calculateLowestPoints()
+	return board.calculateRisk(), board.calculateLargestBasinsSizeMultiplier()
+}
+
+func prepareData(data []string) *HeightMap {
+	linesNumber := len(data)
+	numbersInOneline := len(data[0])
+	numbers := make(map[int][]int, linesNumber)
+	visited := make(map[int]map[int]bool, linesNumber)
+	for i := 0; i < linesNumber; i++ {
+		numbers[i] = make([]int, numbersInOneline)
+		visited[i] = make(map[int]bool, numbersInOneline)
+		for key, character := range data[i] {
+			numbers[i][key], _ = strconv.Atoi(string(character))
+			visited[i][key] = false
+		}
+	}
+	var lowestPointsArr []*LowestPoint
+	return &HeightMap{numbersInOneline, linesNumber, numbers, visited, lowestPointsArr}
 }
