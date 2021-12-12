@@ -1,15 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"strings"
 )
 
 //https://adventofcode.com/2021/day/12
-
-type CaveMap struct {
-	caves map[string]*Cave
-}
 
 type Cave struct {
 	name        string
@@ -29,37 +24,43 @@ func (cave *Cave) addConnection(connectedCave *Cave) {
 	cave.connections[connectedCave.name] = connectedCave
 }
 
-func (cave *Cave) move(alreadyVisited []string, connectedCave *Cave, possiblePaths int) int {
+func (cave *Cave) move(alreadyVisited []string, connectedCave *Cave, possiblePaths int, smallCaveUsed bool) int {
 	alreadyVisited = append(alreadyVisited, connectedCave.name)
 	for _, connection := range connectedCave.connections {
 		if connection.name == "end" {
 			possiblePaths++
-			alreadyVisited = append(alreadyVisited, "end")
-			fmt.Println(alreadyVisited)
 			continue
 		}
-		if connection.small && hasAlreadyVisited(alreadyVisited, connection) {
+		if connection.small && hasAlreadyVisitedTwice(alreadyVisited, connection, smallCaveUsed) {
 			continue
 		}
-		possiblePaths = connectedCave.move(alreadyVisited, connection, possiblePaths)
+		caveUsed := false
+		if smallCaveUsed || (connection.small && hasAlreadyVisited(alreadyVisited, connection)) {
+			caveUsed = true
+		}
+		possiblePaths = connectedCave.move(alreadyVisited, connection, possiblePaths, caveUsed)
 	}
 	return possiblePaths
 }
 
-func (caveMap *CaveMap) start() int {
+func countPossiblePaths(caves map[string]*Cave, visitSingleSmallCaveTwice bool) int {
 	paths := 0
-	startCave := caveMap.caves["start"]
+	startCave := caves["start"]
 	for _, connection := range startCave.connections {
-		fmt.Println("start")
 		visited := []string{}
-		visited = append(visited, "start")
-		paths += startCave.move(visited, connection, 0)
-		fmt.Println("next")
+		if !visitSingleSmallCaveTwice {
+			paths += startCave.move(visited, connection, 0, true)
+		} else {
+			paths += startCave.move(visited, connection, 0, false)
+		}
 	}
 	return paths
 }
 
 func hasAlreadyVisited(visited []string, cave *Cave) bool {
+	if cave.name == "end" || cave.name == "start" {
+		return true
+	}
 	for _, caveName := range visited {
 		if caveName == cave.name {
 			return true
@@ -68,8 +69,21 @@ func hasAlreadyVisited(visited []string, cave *Cave) bool {
 	return false
 }
 
+func hasAlreadyVisitedTwice(visited []string, cave *Cave, singleCaveUsed bool) bool {
+	if cave.name == "end" || cave.name == "start" {
+		return true
+	}
+	sum := 0
+	for _, caveName := range visited {
+		if caveName == cave.name {
+			sum++
+		}
+	}
+	return sum == 2 || singleCaveUsed && sum == 1
+}
+
 func day12() (int, int) {
-	data := fileToStringArray("input/12/test_input.txt")
+	data := fileToStringArray("input/12/input.txt")
 	caves := make(map[string]*Cave)
 	for _, line := range data {
 		connection := strings.Split(line, "-")
@@ -82,11 +96,6 @@ func day12() (int, int) {
 		caves[connection[0]].addConnection(caves[connection[1]])
 		caves[connection[1]].addConnection(caves[connection[0]])
 	}
-	caveMap := CaveMap{caves}
 
-	return day12Task1(&caveMap), 0
-}
-
-func day12Task1(caveMap *CaveMap) int {
-	return caveMap.start()
+	return countPossiblePaths(caves, false), countPossiblePaths(caves, true)
 }
