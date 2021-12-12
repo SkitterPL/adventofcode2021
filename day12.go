@@ -8,7 +8,7 @@ import (
 
 type Cave struct {
 	name        string
-	connections map[string]*Cave
+	connections []*Cave
 	small       bool
 }
 
@@ -17,11 +17,11 @@ func newCave(name string) *Cave {
 	if name == strings.ToLower(name) {
 		small = true
 	}
-	return &Cave{name, map[string]*Cave{}, small}
+	return &Cave{name, []*Cave{}, small}
 }
 
 func (cave *Cave) addConnection(connectedCave *Cave) {
-	cave.connections[connectedCave.name] = connectedCave
+	cave.connections = append(cave.connections, connectedCave)
 }
 
 func (cave *Cave) move(alreadyVisited []string, connectedCave *Cave, possiblePaths int, smallCaveUsed bool) int {
@@ -34,18 +34,14 @@ func (cave *Cave) move(alreadyVisited []string, connectedCave *Cave, possiblePat
 		if connection.small && hasAlreadyVisitedTwice(alreadyVisited, connection, smallCaveUsed) {
 			continue
 		}
-		caveUsed := false
-		if smallCaveUsed || (connection.small && hasAlreadyVisited(alreadyVisited, connection)) {
-			caveUsed = true
-		}
+		caveUsed := smallCaveUsed || (connection.small && hasAlreadyVisited(alreadyVisited, connection))
 		possiblePaths = connectedCave.move(alreadyVisited, connection, possiblePaths, caveUsed)
 	}
 	return possiblePaths
 }
 
-func countPossiblePaths(caves map[string]*Cave, visitSingleSmallCaveTwice bool) int {
+func countPossiblePaths(startCave *Cave, visitSingleSmallCaveTwice bool) int {
 	paths := 0
-	startCave := caves["start"]
 	for _, connection := range startCave.connections {
 		visited := []string{}
 		if !visitSingleSmallCaveTwice {
@@ -97,5 +93,5 @@ func day12() (int, int) {
 		caves[connection[1]].addConnection(caves[connection[0]])
 	}
 
-	return countPossiblePaths(caves, false), countPossiblePaths(caves, true)
+	return countPossiblePaths(caves["start"], false), countPossiblePaths(caves["start"], true)
 }
