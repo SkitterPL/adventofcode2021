@@ -11,7 +11,7 @@ type OctopusCavern struct {
 
 func (cavern *OctopusCavern) makeStep() bool {
 	for rowKey, row := range cavern.octopuses {
-		for colKey, _ := range row {
+		for colKey := range row {
 			cavern.octopuses[rowKey][colKey]++
 			if !cavern.flashed[rowKey][colKey] && cavern.octopuses[rowKey][colKey] >= 10 {
 				cavern.flash(rowKey, colKey)
@@ -20,7 +20,7 @@ func (cavern *OctopusCavern) makeStep() bool {
 	}
 	allFlashed := true
 	for rowKey, row := range cavern.octopuses {
-		for colKey, _ := range row {
+		for colKey := range row {
 			if cavern.flashed[rowKey][colKey] {
 				cavern.octopuses[rowKey][colKey] = 0
 				cavern.flashed[rowKey][colKey] = false
