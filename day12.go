@@ -13,11 +13,7 @@ type Cave struct {
 }
 
 func newCave(name string) *Cave {
-	small := false
-	if name == strings.ToLower(name) {
-		small = true
-	}
-	return &Cave{name, []*Cave{}, small}
+	return &Cave{name, []*Cave{}, name == strings.ToLower(name)}
 }
 
 func (cave *Cave) addConnection(connectedCave *Cave) {
@@ -75,7 +71,7 @@ func hasAlreadyVisitedTwice(visited []string, cave *Cave, singleCaveUsed bool) b
 			sum++
 		}
 	}
-	return sum == 2 || singleCaveUsed && sum == 1
+	return sum == 2 || (singleCaveUsed && sum == 1)
 }
 
 func day12() (int, int) {
