@@ -1,10 +1,58 @@
 package main
 
+import (
+	"container/heap"
+)
+
 //https://adventofcode.com/2021/day/15
 
 const MaxInt = int(^uint(0) >> 1)
 
+type CavePosition struct {
+	x        int
+	y        int
+	distance int
+	index    int
+}
+
+type PriorityQueue []*CavePosition
+
+func (pq PriorityQueue) Len() int { return len(pq) }
+
+func (pq PriorityQueue) Less(i, j int) bool {
+	return pq[i].distance < pq[j].distance
+}
+
+func (pq *PriorityQueue) Pop() interface{} {
+	old := *pq
+	n := len(old)
+	item := old[n-1]
+	old[n-1] = nil
+	item.index = -1
+	*pq = old[0 : n-1]
+	return item
+}
+
+func (pq *PriorityQueue) Push(x interface{}) {
+	n := len(*pq)
+	item := x.(*CavePosition)
+	item.index = n
+	*pq = append(*pq, item)
+}
+
+func (pq PriorityQueue) Swap(i, j int) {
+	pq[i], pq[j] = pq[j], pq[i]
+	pq[i].index = i
+	pq[j].index = j
+}
+
+func (pq *PriorityQueue) update(item *CavePosition, priority int) {
+	item.distance = priority
+	heap.Fix(pq, item.index)
+}
+
 type Cavern struct {
+	heap      *PriorityQueue
 	distances [][]int
 	unvisited [][]int
 	length    int
@@ -35,24 +83,31 @@ func prepareBiggerData(data [][]int) [][]int {
 
 func djikstra(data [][]int) int {
 	length := len(data)
-	cavern := &Cavern{make([][]int, length), data, length}
+	queue := make(PriorityQueue, length*length)
+	cavern := &Cavern{&queue, make([][]int, length), data, length}
 	for y := 0; y < length; y++ {
 		cavern.distances[y] = make([]int, length)
 		for x := 0; x < length; x++ {
 			cavern.distances[y][x] = MaxInt
+			(*cavern.heap)[y*length+x] = &CavePosition{x: x, y: y, distance: MaxInt, index: y*length + x}
 		}
 	}
+	(*cavern.heap)[0].distance = 0
 	cavern.distances[0][0] = 0
+	heap.Init(&queue)
 
 	return cavern.calculateShortestPath()
 }
 
 func (cavern *Cavern) calculateShortestPath() int {
-	maxIndex := cavern.length - 1
+	maxindex := cavern.length - 1
 	for {
-		y, x := cavern.getElementWithSmallestDistanceToSource()
+		cp := heap.Pop(cavern.heap).(*CavePosition)
+		y := cp.y
+		x := cp.x
+		cavern.unvisited[y][x] = -1
 
-		if y == maxIndex && x == maxIndex {
+		if y == maxindex && x == maxindex {
 			break
 		}
 
@@ -62,25 +117,7 @@ func (cavern *Cavern) calculateShortestPath() int {
 		cavern.calculateDistanceForNeighbour(x, y, x, y-1)
 	}
 
-	return cavern.distances[cavern.length-1][cavern.length-1]
-}
-
-func (cavern *Cavern) getElementWithSmallestDistanceToSource() (int, int) {
-	min := MaxInt
-	var x, y int
-	for row, unvisitedRow := range cavern.unvisited {
-		for col, unvisitedItem := range unvisitedRow {
-			if unvisitedItem == -1 {
-				continue
-			}
-			if cavern.distances[row][col] < min {
-				min = cavern.distances[row][col]
-				y, x = row, col
-			}
-		}
-	}
-	cavern.unvisited[y][x] = -1
-	return y, x
+	return cavern.distances[maxindex][maxindex]
 }
 
 func (cavern *Cavern) calculateDistanceForNeighbour(x int, y int, newX int, newY int) {
@@ -90,5 +127,8 @@ func (cavern *Cavern) calculateDistanceForNeighbour(x int, y int, newX int, newY
 	distance := cavern.distances[y][x] + cavern.unvisited[newY][newX]
 	if distance < cavern.distances[newY][newX] {
 		cavern.distances[newY][newX] = distance
+		item := &CavePosition{x: newX, y: newY, distance: distance}
+		heap.Push(cavern.heap, item)
+		cavern.heap.update(item, distance)
 	}
 }
