@@ -1,17 +1,13 @@
 package main
 
-//https://adventofcode.com/2021/day/14
+//https://adventofcode.com/2021/day/15
 
 const MaxInt = int(^uint(0) >> 1)
 
-type Item struct {
-	x    int
-	y    int
-	risk int
-}
-
-func newItem(x int, y int, risk int) *Item {
-	return &Item{x, y, risk}
+type Cavern struct {
+	distances [][]int
+	unvisited [][]int
+	length    int
 }
 
 func day15() (int, int) {
@@ -39,62 +35,60 @@ func prepareBiggerData(data [][]int) [][]int {
 
 func djikstra(data [][]int) int {
 	length := len(data)
-	unvisited := make([][]*Item, length)
-	distances := make([][]int, length)
-	previous := make([][]*Item, length)
+	cavern := &Cavern{make([][]int, length), data, length}
 	for y := 0; y < length; y++ {
-		unvisited[y] = make([]*Item, length)
-		distances[y] = make([]int, length)
-		previous[y] = make([]*Item, length)
+		cavern.distances[y] = make([]int, length)
 		for x := 0; x < length; x++ {
-			unvisited[y][x] = newItem(x, y, data[y][x])
-			distances[y][x] = MaxInt
-			previous[y][x] = nil
+			cavern.distances[y][x] = MaxInt
 		}
 	}
-	distances[0][0] = 0
+	cavern.distances[0][0] = 0
 
-	for len(unvisited) != 0 {
-		nextItem := getElementWithSmallestDistToSource(distances, &unvisited)
+	return cavern.calculateShortestPath()
+}
 
-		if nextItem.x == length-1 && nextItem.y == length-1 {
+func (cavern *Cavern) calculateShortestPath() int {
+	maxIndex := cavern.length - 1
+	for {
+		y, x := cavern.getElementWithSmallestDistanceToSource()
+
+		if y == maxIndex && x == maxIndex {
 			break
 		}
 
-		calculateDistanceForNeighbour(length, nextItem, nextItem.x+1, nextItem.y, &distances, &previous, unvisited)
-		calculateDistanceForNeighbour(length, nextItem, nextItem.x, nextItem.y+1, &distances, &previous, unvisited)
-		calculateDistanceForNeighbour(length, nextItem, nextItem.x-1, nextItem.y, &distances, &previous, unvisited)
-		calculateDistanceForNeighbour(length, nextItem, nextItem.x, nextItem.y-1, &distances, &previous, unvisited)
+		cavern.calculateDistanceForNeighbour(x, y, x+1, y)
+		cavern.calculateDistanceForNeighbour(x, y, x, y+1)
+		cavern.calculateDistanceForNeighbour(x, y, x-1, y)
+		cavern.calculateDistanceForNeighbour(x, y, x, y-1)
 	}
 
-	return distances[length-1][length-1]
+	return cavern.distances[cavern.length-1][cavern.length-1]
 }
 
-func getElementWithSmallestDistToSource(distances [][]int, unvisited *[][]*Item) *Item {
+func (cavern *Cavern) getElementWithSmallestDistanceToSource() (int, int) {
 	min := MaxInt
-	var item *Item
-	for row, unvisitedRow := range *unvisited {
+	var x, y int
+	for row, unvisitedRow := range cavern.unvisited {
 		for col, unvisitedItem := range unvisitedRow {
-			if unvisitedItem == nil {
+			if unvisitedItem == -1 {
 				continue
 			}
-			if distances[row][col] < min {
-				min = distances[row][col]
-				item = unvisitedItem
+			if cavern.distances[row][col] < min {
+				min = cavern.distances[row][col]
+				y, x = row, col
 			}
 		}
 	}
-	(*unvisited)[item.y][item.x] = nil
-	return item
+	cavern.unvisited[y][x] = -1
+	return y, x
 }
 
-func calculateDistanceForNeighbour(length int, item *Item, x int, y int, distances *[][]int, previous *[][]*Item, unvisited [][]*Item) {
-	if x < 0 || y < 0 || y >= length || x >= length || unvisited[y][x] == nil {
+func (cavern *Cavern) calculateDistanceForNeighbour(x int, y int, newX int, newY int) {
+	if newX < 0 || newY < 0 || newY >= cavern.length || newX >= cavern.length || cavern.unvisited[newY][newX] == -1 {
 		return
 	}
-	distance := (*distances)[item.y][item.x] + unvisited[y][x].risk
-	if distance < (*distances)[y][x] {
-		(*distances)[y][x] = distance
-		(*previous)[y][x] = item
+	distance := cavern.distances[y][x] + cavern.unvisited[newY][newX]
+	if distance < cavern.distances[newY][newX] {
+		cavern.distances[newY][newX] = distance
 	}
 }
