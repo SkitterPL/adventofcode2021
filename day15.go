@@ -5,24 +5,19 @@ package main
 const MaxInt = int(^uint(0) >> 1)
 
 type Item struct {
-	key  int
 	x    int
 	y    int
 	risk int
 }
 
-func newItem(x int, y int, risk int, key int) *Item {
-	return &Item{key, x, y, risk}
-}
-
-func key(x int, y int) int {
-	return ((x + y) * (x + y + 1) / 2) + x
+func newItem(x int, y int, risk int) *Item {
+	return &Item{x, y, risk}
 }
 
 func day15() (int, int) {
 	data := fileTo2DIntArray("input/15/input.txt")
-	//biggerData := prepareBiggerData(data)
-	return djikstra(data), 0
+	biggerData := prepareBiggerData(data)
+	return djikstra(data), djikstra(biggerData)
 }
 
 func prepareBiggerData(data [][]int) [][]int {
@@ -44,56 +39,62 @@ func prepareBiggerData(data [][]int) [][]int {
 
 func djikstra(data [][]int) int {
 	length := len(data)
-	unvisited := make(map[int]*Item, length*length)
-	distances := make(map[int]int, length*length)
-	previous := make(map[int]*Item, length*length)
+	unvisited := make([][]*Item, length)
+	distances := make([][]int, length)
+	previous := make([][]*Item, length)
 	for y := 0; y < length; y++ {
+		unvisited[y] = make([]*Item, length)
+		distances[y] = make([]int, length)
+		previous[y] = make([]*Item, length)
 		for x := 0; x < length; x++ {
-			key := key(x, y)
-			unvisited[key] = newItem(x, y, data[y][x], key)
-			distances[key] = MaxInt
+			unvisited[y][x] = newItem(x, y, data[y][x])
+			distances[y][x] = MaxInt
+			previous[y][x] = nil
 		}
 	}
-	distances[0] = 0
+	distances[0][0] = 0
 
 	for len(unvisited) != 0 {
-		nextItem := getElementWithSmallestDistToSource(distances, unvisited)
+		nextItem := getElementWithSmallestDistToSource(distances, &unvisited)
 
-		if nextItem.key == key(length-1, length-1) {
+		if nextItem.x == length-1 && nextItem.y == length-1 {
 			break
 		}
 
-		calculateDistanceForNeighbour(nextItem, nextItem.x+1, nextItem.y, distances, previous, unvisited)
-		calculateDistanceForNeighbour(nextItem, nextItem.x, nextItem.y+1, distances, previous, unvisited)
-		calculateDistanceForNeighbour(nextItem, nextItem.x-1, nextItem.y, distances, previous, unvisited)
-		calculateDistanceForNeighbour(nextItem, nextItem.x, nextItem.y-1, distances, previous, unvisited)
+		calculateDistanceForNeighbour(length, nextItem, nextItem.x+1, nextItem.y, &distances, &previous, unvisited)
+		calculateDistanceForNeighbour(length, nextItem, nextItem.x, nextItem.y+1, &distances, &previous, unvisited)
+		calculateDistanceForNeighbour(length, nextItem, nextItem.x-1, nextItem.y, &distances, &previous, unvisited)
+		calculateDistanceForNeighbour(length, nextItem, nextItem.x, nextItem.y-1, &distances, &previous, unvisited)
 	}
 
-	return distances[key(length-1, length-1)]
+	return distances[length-1][length-1]
 }
 
-func getElementWithSmallestDistToSource(distances map[int]int, unvisited map[int]*Item) *Item {
+func getElementWithSmallestDistToSource(distances [][]int, unvisited *[][]*Item) *Item {
 	min := MaxInt
-	itemKey := 0
-	for key := range unvisited {
-		if distances[key] < min {
-			min = distances[key]
-			itemKey = key
+	var item *Item
+	for row, unvisitedRow := range *unvisited {
+		for col, unvisitedItem := range unvisitedRow {
+			if unvisitedItem == nil {
+				continue
+			}
+			if distances[row][col] < min {
+				min = distances[row][col]
+				item = unvisitedItem
+			}
 		}
 	}
-	item := unvisited[itemKey]
-	delete(unvisited, itemKey)
+	(*unvisited)[item.y][item.x] = nil
 	return item
 }
 
-func calculateDistanceForNeighbour(item *Item, x int, y int, distances map[int]int, previous map[int]*Item, unvisited map[int]*Item) {
-	key := key(x, y)
-	if unvisited[key] == nil {
+func calculateDistanceForNeighbour(length int, item *Item, x int, y int, distances *[][]int, previous *[][]*Item, unvisited [][]*Item) {
+	if x < 0 || y < 0 || y >= length || x >= length || unvisited[y][x] == nil {
 		return
 	}
-	distance := distances[item.key] + unvisited[key].risk
-	if distance < distances[key] {
-		distances[key] = distance
-		previous[key] = item
+	distance := (*distances)[item.y][item.x] + unvisited[y][x].risk
+	if distance < (*distances)[y][x] {
+		(*distances)[y][x] = distance
+		(*previous)[y][x] = item
 	}
 }
