@@ -20,7 +20,8 @@ func main() {
 	//fmt.Println(day11())
 	//fmt.Println(day12())
 	//fmt.Println(day13())
-	fmt.Println(day14())
+	//fmt.Println(day14())
+	fmt.Println(day15())
 	elapsed := time.Since(start)
 
 	fmt.Printf("Task took %s\n", elapsed)
