@@ -1,69 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"strconv"
 )
 
 //https://adventofcode.com/2021/day/16
 
 type Expression struct {
-	value          string
 	version        int64
 	typeId         int64
-	literal        bool
 	literalValue   int64
 	subExpressions []*Expression
-}
-
-func newExpression(value string) (*Expression, int) {
-	subExpressions := []*Expression{}
-	version, _ := strconv.ParseInt(value[0:3], 2, 64)
-	typeId, _ := strconv.ParseInt(value[3:6], 2, 64)
-
-	if typeId == 4 {
-		literalEnd := false
-		index := 6
-		literalValue := ""
-		for !literalEnd {
-			shouldEnd, _ := strconv.ParseInt(value[index:index+1], 2, 64)
-			if shouldEnd == 0 {
-				literalEnd = true
-			}
-			literalValue += value[index+1 : index+5]
-			index += 5
-		}
-		intLiteral, _ := strconv.ParseInt(literalValue, 2, 64)
-		return &Expression{value: value, version: version, typeId: typeId, literal: true, literalValue: intLiteral}, index
-	}
-	lengthTypeId, _ := strconv.ParseInt(value[6:7], 2, 64)
-
-	if lengthTypeId == 0 {
-		index := 22
-		subPacketsNumber, _ := strconv.ParseInt(value[7:index], 2, 64)
-		endIndex := index + int(subPacketsNumber)
-		for index < endIndex {
-			subExpression, newIndex := newExpression(value[index:])
-			if subExpression == nil {
-				index = endIndex
-				break
-			}
-			index += newIndex
-			subExpressions = append(subExpressions, subExpression)
-		}
-		return &Expression{value: value, version: version, typeId: typeId, literal: false, subExpressions: subExpressions}, index
-	}
-
-	index := 18
-	subPacketsNumber, _ := strconv.ParseInt(value[7:index], 2, 64)
-	for i := 0; i < int(subPacketsNumber); i++ {
-		subExpression, newIndex := newExpression(value[index:])
-		if subExpression == nil {
-			break
-		}
-		index += newIndex
-		subExpressions = append(subExpressions, subExpression)
-	}
-	return &Expression{value: value, version: version, typeId: typeId, literal: false, subExpressions: subExpressions}, index
 }
 
 func day16() (int64, int64) {
@@ -72,15 +20,59 @@ func day16() (int64, int64) {
 	return mainExpression.packetVersionSum(), mainExpression.calculateExpression()
 }
 
+func newExpression(value string) (*Expression, int) {
+	version, _ := strconv.ParseInt(value[0:3], 2, 64)
+	typeId, _ := strconv.ParseInt(value[3:6], 2, 64)
+
+	if typeId == 4 {
+		return calculateLiteral(value, version)
+	}
+
+	subExpressions := []*Expression{}
+	var index int
+
+	if value[6:7] == "0" {
+		index = 22 //7+15
+		subPacketsNumber, _ := strconv.ParseInt(value[7:index], 2, 64)
+		endIndex := index + int(subPacketsNumber)
+		for index < endIndex {
+			subExpression, newIndex := newExpression(value[index:])
+			index += newIndex
+			subExpressions = append(subExpressions, subExpression)
+		}
+	} else {
+		index = 18 //7+11
+		subPacketsNumber, _ := strconv.ParseInt(value[7:index], 2, 64)
+		for i := 0; i < int(subPacketsNumber); i++ {
+			subExpression, newIndex := newExpression(value[index:])
+			index += newIndex
+			subExpressions = append(subExpressions, subExpression)
+		}
+	}
+
+	return &Expression{version: version, typeId: typeId, subExpressions: subExpressions}, index
+}
+
+func calculateLiteral(value string, version int64) (*Expression, int) {
+	literalEnd := false
+	index := 6
+	literalValue := ""
+	for !literalEnd {
+		if value[index:index+1] == "0" {
+			literalEnd = true
+		}
+		literalValue += value[index+1 : index+5]
+		index += 5
+	}
+	intLiteralValue, _ := strconv.ParseInt(literalValue, 2, 64)
+	return &Expression{version: version, typeId: 4, literalValue: intLiteralValue}, index
+}
+
 func hex2Bin(hex string) string {
 	bin := ""
 	for _, char := range hex {
 		i, _ := strconv.ParseInt(string(char), 16, 32)
-		number := strconv.FormatInt(i, 2)
-		for len(number) != 4 {
-			number = "0" + number
-		}
-		bin += number
+		bin += fmt.Sprintf("%04b", i)
 	}
 	return bin
 }
