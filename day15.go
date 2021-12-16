@@ -15,6 +15,7 @@ type CavePosition struct {
 	index    int
 }
 
+//Priority Queue
 type PriorityQueue []*CavePosition
 
 func (pq PriorityQueue) Len() int { return len(pq) }
@@ -51,6 +52,7 @@ func (pq *PriorityQueue) update(item *CavePosition, priority int) {
 	heap.Fix(pq, item.index)
 }
 
+//Task
 type Cavern struct {
 	heap      *PriorityQueue
 	distances [][]int
