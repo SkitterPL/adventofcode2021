@@ -32,3 +32,10 @@ func TestExplode(t *testing.T) {
 		}
 	}
 }
+
+func (number *SnailfishNumber) print() string {
+	if number.isRegular() {
+		return fmt.Sprint(number.value.value)
+	}
+	return "[" + fmt.Sprint(number.x.print()+","+number.y.print()) + "]"
+}

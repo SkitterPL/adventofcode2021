@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"math"
 )
 
@@ -32,13 +31,6 @@ func day18() (float64, float64) {
 	return number.magnitude(), findMaxPossibleMagnitude(snailFishes)
 }
 
-func (number *SnailfishNumber) print() string {
-	if number.isRegular() {
-		return fmt.Sprint(number.value.value)
-	}
-	return "[" + fmt.Sprint(number.x.print()+","+number.y.print()) + "]"
-}
-
 func recreateFromString(value string) *SnailfishNumber {
 	var parsedData []interface{}
 	err := json.Unmarshal([]byte(value), &parsedData)
@@ -47,38 +39,32 @@ func recreateFromString(value string) *SnailfishNumber {
 }
 
 func newSnailfishNumber(value []interface{}) *SnailfishNumber {
-	var xSnail, ySnail *SnailfishNumber
-	var snailFish *SnailfishNumber
-	xFloat, ok := value[0].(float64)
-	if !ok {
-		x := value[0].([]interface{})
-		xSnail = newSnailfishNumber(x)
-	} else {
-		xSnail = &SnailfishNumber{value: &RegularNumber{xFloat}}
-	}
+	xNumber, yNumber := createNumbersFromJson(value)
+	return &SnailfishNumber{x: xNumber, y: yNumber}
+}
 
-	yFloat, ok := value[1].(float64)
-	if !ok {
-		y := value[1].([]interface{})
-		ySnail = newSnailfishNumber(y)
-	} else {
-		ySnail = &SnailfishNumber{value: &RegularNumber{yFloat}}
+func createNumbersFromJson(value []interface{}) (*SnailfishNumber, *SnailfishNumber) {
+	snailfishNumbers := [2]*SnailfishNumber{}
+	for i := 0; i < 2; i++ {
+		float, ok := value[i].(float64)
+		if ok {
+			snailfishNumbers[i] = &SnailfishNumber{value: &RegularNumber{float}}
+		} else {
+			x := value[i].([]interface{})
+			snailfishNumbers[i] = newSnailfishNumber(x)
+		}
 	}
-
-	snailFish = &SnailfishNumber{x: xSnail, y: ySnail}
-	return snailFish
+	return snailfishNumbers[0], snailfishNumbers[1]
 }
 
 func add(num1 *SnailfishNumber, num2 *SnailfishNumber) *SnailfishNumber {
 	newNumber := (&SnailfishNumber{x: num1, y: num2}).copy()
-	newNumber.recalculateParents(nil)
 	for {
+		newNumber.recalculateParents(nil)
 		if newNumber.explode(0) {
-			newNumber.recalculateParents(nil)
 			continue
 		}
 		if newNumber.split() {
-			newNumber.recalculateParents(nil)
 			continue
 		}
 		break
@@ -87,29 +73,11 @@ func add(num1 *SnailfishNumber, num2 *SnailfishNumber) *SnailfishNumber {
 }
 
 func (number *SnailfishNumber) explode(nestedLevel int) bool {
-	if nestedLevel == 4 && number.x.isRegular() && number.y.isRegular() {
-		parent := number.parent
-		var right, left *SnailfishNumber
-		if number == parent.x {
-			right = parent.findFirstRegularTheRightForX()
-			left = parent.findFirstRegularToTheLeftForX()
-		} else {
-			left = parent.findFirstRegularToTheLeftForY()
-			right = parent.findFirstRegularTheRightForY()
-		}
+	if nestedLevel > 4 {
+		return false
+	}
 
-		if left != nil {
-			left.value.value += number.x.value.value
-		}
-		if right != nil {
-			right.value.value += number.y.value.value
-		}
-
-		number.x = nil
-		number.y = nil
-		number.value = &RegularNumber{0}
-		return true
-	} else {
+	if nestedLevel < 4 {
 		if !number.x.isRegular() {
 			if number.x.explode(nestedLevel + 1) {
 				return true
@@ -121,8 +89,30 @@ func (number *SnailfishNumber) explode(nestedLevel int) bool {
 		if !number.y.isRegular() {
 			return number.y.explode(nestedLevel + 1)
 		}
+		return false
 	}
-	return false
+
+	parent := number.parent
+	var right, left *SnailfishNumber
+	if number == parent.x {
+		right = parent.findFirstRegularTheRightForX()
+		left = parent.findFirstRegularToTheLeftForX()
+	} else {
+		left = parent.findFirstRegularToTheLeftForY()
+		right = parent.findFirstRegularTheRightForY()
+	}
+
+	if left != nil {
+		left.value.value += number.x.value.value
+	}
+	if right != nil {
+		right.value.value += number.y.value.value
+	}
+
+	number.x = nil
+	number.y = nil
+	number.value = &RegularNumber{0}
+	return true
 }
 
 func (number *SnailfishNumber) split() bool {
@@ -166,9 +156,6 @@ func (number *SnailfishNumber) findFirstRegularTheRightForX() *SnailfishNumber {
 
 func (number *SnailfishNumber) findFirstRegularToTheLeftForY() *SnailfishNumber {
 	if number.parent == nil {
-		return nil
-	}
-	if number.isRegular() {
 		return nil
 	}
 	if number.x.isRegular() {
