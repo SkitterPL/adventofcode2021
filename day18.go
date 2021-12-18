@@ -10,12 +10,8 @@ import (
 type SnailfishNumber struct {
 	x      *SnailfishNumber
 	y      *SnailfishNumber
-	value  *RegularNumber
+	value  float64
 	parent *SnailfishNumber
-}
-
-type RegularNumber struct {
-	value float64
 }
 
 func day18() (float64, float64) {
@@ -40,7 +36,7 @@ func recreateFromString(value string) *SnailfishNumber {
 
 func newSnailfishNumber(value []interface{}) *SnailfishNumber {
 	xNumber, yNumber := createNumbersFromJson(value)
-	return &SnailfishNumber{x: xNumber, y: yNumber}
+	return &SnailfishNumber{x: xNumber, y: yNumber, value: -1}
 }
 
 func createNumbersFromJson(value []interface{}) (*SnailfishNumber, *SnailfishNumber) {
@@ -48,7 +44,7 @@ func createNumbersFromJson(value []interface{}) (*SnailfishNumber, *SnailfishNum
 	for i := 0; i < 2; i++ {
 		float, ok := value[i].(float64)
 		if ok {
-			snailfishNumbers[i] = &SnailfishNumber{value: &RegularNumber{float}}
+			snailfishNumbers[i] = &SnailfishNumber{value: float}
 		} else {
 			x := value[i].([]interface{})
 			snailfishNumbers[i] = newSnailfishNumber(x)
@@ -58,7 +54,7 @@ func createNumbersFromJson(value []interface{}) (*SnailfishNumber, *SnailfishNum
 }
 
 func add(num1 *SnailfishNumber, num2 *SnailfishNumber) *SnailfishNumber {
-	newNumber := (&SnailfishNumber{x: num1, y: num2}).copy()
+	newNumber := (&SnailfishNumber{x: num1, y: num2, value: -1}).copy()
 	for {
 		newNumber.recalculateParents(nil)
 		if newNumber.explode(0) {
@@ -103,24 +99,24 @@ func (number *SnailfishNumber) explode(nestedLevel int) bool {
 	}
 
 	if left != nil {
-		left.value.value += number.x.value.value
+		left.value += number.x.value
 	}
 	if right != nil {
-		right.value.value += number.y.value.value
+		right.value += number.y.value
 	}
 
 	number.x = nil
 	number.y = nil
-	number.value = &RegularNumber{0}
+	number.value = 0
 	return true
 }
 
 func (number *SnailfishNumber) split() bool {
 	if number.isRegular() {
-		if number.value.value >= 10 {
-			number.x = &SnailfishNumber{value: &RegularNumber{math.Floor(number.value.value / 2)}}
-			number.y = &SnailfishNumber{value: &RegularNumber{math.Ceil(number.value.value / 2)}}
-			number.value = nil
+		if number.value >= 10 {
+			number.x = &SnailfishNumber{value: math.Floor(number.value / 2)}
+			number.y = &SnailfishNumber{value: math.Ceil(number.value / 2)}
+			number.value = -1
 			return true
 		}
 		return false
@@ -137,7 +133,7 @@ func (number *SnailfishNumber) split() bool {
 }
 
 func (number *SnailfishNumber) isRegular() bool {
-	return number.value != nil
+	return number.value != -1
 }
 
 func (number *SnailfishNumber) findFirstRegularTheRightForX() *SnailfishNumber {
@@ -212,7 +208,7 @@ func getMostLeft(number *SnailfishNumber) *SnailfishNumber {
 
 func (number *SnailfishNumber) magnitude() float64 {
 	if number.isRegular() {
-		return number.value.value
+		return number.value
 	}
 	return 3*number.x.magnitude() + 2*number.y.magnitude()
 }
@@ -249,7 +245,7 @@ func (number *SnailfishNumber) recalculateParents(parent *SnailfishNumber) {
 
 func (number *SnailfishNumber) copy() *SnailfishNumber {
 	if number.isRegular() {
-		return &SnailfishNumber{value: &RegularNumber{number.value.value}}
+		return &SnailfishNumber{value: number.value}
 	}
-	return &SnailfishNumber{x: number.x.copy(), y: number.y.copy()}
+	return &SnailfishNumber{x: number.x.copy(), y: number.y.copy(), value: -1}
 }
