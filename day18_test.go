@@ -25,7 +25,7 @@ var dataProvider = []struct {
 func TestExplode(t *testing.T) {
 	for _, tt := range dataProvider {
 		got := recreateFromString(tt.in)
-		got.explode()
+		got.explode(0)
 		if got.print() != tt.out {
 			fmt.Println(tt.in)
 			t.Errorf("Got %s; want %s", got.print(), tt.out)

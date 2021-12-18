@@ -9,11 +9,10 @@ import (
 //https://adventofcode.com/2021/day/18
 
 type SnailfishNumber struct {
-	nestedLevel int
-	x           *SnailfishNumber
-	y           *SnailfishNumber
-	value       *RegularNumber
-	parent      *SnailfishNumber
+	x      *SnailfishNumber
+	y      *SnailfishNumber
+	value  *RegularNumber
+	parent *SnailfishNumber
 }
 
 type RegularNumber struct {
@@ -44,44 +43,42 @@ func recreateFromString(value string) *SnailfishNumber {
 	var parsedData []interface{}
 	err := json.Unmarshal([]byte(value), &parsedData)
 	check(err)
-	return newSnailfishNumber(parsedData, 0)
+	return newSnailfishNumber(parsedData)
 }
 
-func newSnailfishNumber(value []interface{}, nestedLevel int) *SnailfishNumber {
+func newSnailfishNumber(value []interface{}) *SnailfishNumber {
 	var xSnail, ySnail *SnailfishNumber
 	var snailFish *SnailfishNumber
 	xFloat, ok := value[0].(float64)
 	if !ok {
 		x := value[0].([]interface{})
-		xSnail = newSnailfishNumber(x, nestedLevel+1)
+		xSnail = newSnailfishNumber(x)
 	} else {
-		xSnail = &SnailfishNumber{nestedLevel + 1, nil, nil, &RegularNumber{xFloat}, nil}
+		xSnail = &SnailfishNumber{value: &RegularNumber{xFloat}}
 	}
 
 	yFloat, ok := value[1].(float64)
 	if !ok {
 		y := value[1].([]interface{})
-		ySnail = newSnailfishNumber(y, nestedLevel+1)
+		ySnail = newSnailfishNumber(y)
 	} else {
-		ySnail = &SnailfishNumber{nestedLevel + 1, nil, nil, &RegularNumber{yFloat}, nil}
+		ySnail = &SnailfishNumber{value: &RegularNumber{yFloat}}
 	}
 
-	snailFish = &SnailfishNumber{nestedLevel, xSnail, ySnail, nil, nil}
-	xSnail.parent = snailFish
-	ySnail.parent = snailFish
+	snailFish = &SnailfishNumber{x: xSnail, y: ySnail}
 	return snailFish
 }
 
 func add(num1 *SnailfishNumber, num2 *SnailfishNumber) *SnailfishNumber {
-	stringData := "[" + num1.print() + "," + num2.print() + "]"
-	newNumber := recreateFromString(stringData)
+	newNumber := (&SnailfishNumber{x: num1, y: num2}).copy()
+	newNumber.recalculateParents(nil)
 	for {
-		if newNumber.explode() {
-			newNumber = recreateFromString(newNumber.print())
+		if newNumber.explode(0) {
+			newNumber.recalculateParents(nil)
 			continue
 		}
 		if newNumber.split() {
-			newNumber = recreateFromString(newNumber.print())
+			newNumber.recalculateParents(nil)
 			continue
 		}
 		break
@@ -89,8 +86,8 @@ func add(num1 *SnailfishNumber, num2 *SnailfishNumber) *SnailfishNumber {
 	return newNumber
 }
 
-func (number *SnailfishNumber) explode() bool {
-	if number.nestedLevel == 4 && number.x.isRegular() && number.y.isRegular() {
+func (number *SnailfishNumber) explode(nestedLevel int) bool {
+	if nestedLevel == 4 && number.x.isRegular() && number.y.isRegular() {
 		parent := number.parent
 		var right, left *SnailfishNumber
 		if number == parent.x {
@@ -114,15 +111,15 @@ func (number *SnailfishNumber) explode() bool {
 		return true
 	} else {
 		if !number.x.isRegular() {
-			if number.x.explode() {
+			if number.x.explode(nestedLevel + 1) {
 				return true
 			}
 			if !number.y.isRegular() {
-				return number.y.explode()
+				return number.y.explode(nestedLevel + 1)
 			}
 		}
 		if !number.y.isRegular() {
-			return number.y.explode()
+			return number.y.explode(nestedLevel + 1)
 		}
 	}
 	return false
@@ -252,4 +249,20 @@ func findMaxPossibleMagnitude(numbers []*SnailfishNumber) float64 {
 		}
 	}
 	return maxMagnitude
+}
+
+func (number *SnailfishNumber) recalculateParents(parent *SnailfishNumber) {
+	number.parent = parent
+	if number.isRegular() {
+		return
+	}
+	number.x.recalculateParents(number)
+	number.y.recalculateParents(number)
+}
+
+func (number *SnailfishNumber) copy() *SnailfishNumber {
+	if number.isRegular() {
+		return &SnailfishNumber{value: &RegularNumber{number.value.value}}
+	}
+	return &SnailfishNumber{x: number.x.copy(), y: number.y.copy()}
 }
