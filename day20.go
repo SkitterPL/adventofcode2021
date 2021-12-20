@@ -5,34 +5,36 @@ import (
 	"strconv"
 )
 
+const SIZE = 100
+
 //https://adventofcode.com/2021/day/20
 
 func day20() (int, int) {
 	data := fileToStringArray("input/20/input.txt")
 	pattern := data[0]
-	matrix := make([][]int, len(data)+4)
+	matrix := make([][]int, len(data)+SIZE-2)
 	standardRowLen := len(data[2])
-	matrix[0] = make([]int, standardRowLen+6)
-	matrix[1] = make([]int, standardRowLen+6)
-	matrix[2] = make([]int, standardRowLen+6)
-	matrix[standardRowLen+3] = make([]int, len(data[2])+6)
-	matrix[standardRowLen+4] = make([]int, len(data[2])+6)
-	matrix[standardRowLen+5] = make([]int, len(data[2])+6)
+	for i := 0; i < SIZE/2; i++ {
+		matrix[i] = make([]int, standardRowLen+SIZE)
+	}
+	for i := standardRowLen + SIZE/2; i < standardRowLen+SIZE; i++ {
+		matrix[i] = make([]int, standardRowLen+SIZE)
+	}
 	for key, line := range data[2:] {
-		matrix[key+3] = make([]int, standardRowLen+6)
-		matrix[key+3][0] = 0
-		matrix[key+3][1] = 0
-		matrix[key+3][2] = 0
-		for i := 3; i < standardRowLen+3; i++ {
-			if line[i-3] == '#' {
-				matrix[key+3][i] = 1
+		matrix[key+SIZE/2] = make([]int, standardRowLen+SIZE)
+		for i := 0; i < SIZE/2; i++ {
+			matrix[key+SIZE/2][i] = 0
+		}
+		for i := standardRowLen + SIZE/2; i < standardRowLen+SIZE; i++ {
+			matrix[key+SIZE/2][i] = 0
+		}
+		for i := SIZE / 2; i < standardRowLen+SIZE/2; i++ {
+			if line[i-SIZE/2] == '#' {
+				matrix[key+SIZE/2][i] = 1
 			} else {
-				matrix[key+3][i] = 0
+				matrix[key+SIZE/2][i] = 0
 			}
 		}
-		matrix[key+3][standardRowLen+3] = 0
-		matrix[key+3][standardRowLen+4] = 0
-		matrix[key+3][standardRowLen+5] = 0
 	}
 
 	return enhance(matrix, pattern, 2), enhance(matrix, pattern, 50)
