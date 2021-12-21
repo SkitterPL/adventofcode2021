@@ -57,9 +57,6 @@ func enhanceImage(image [][]int, pattern string, iteration int) ([][]int, int) {
 	var infiniteBit int
 	if pattern[0] == '.' {
 		infiniteBit = 0
-		if iteration%2 == 0 {
-			infiniteBit = 0
-		}
 	} else {
 		infiniteBit = 0
 		if iteration%2 == 0 {
